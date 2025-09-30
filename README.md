@@ -24,3 +24,9 @@ uv run python -m http.server
 > The model should be able to run at descent performance on CPU-only devices
 > but a compatible WebGPU browser is required for best performance!
 > See the compatibility list: https://developer.mozilla.org/en-US/docs/Web/API/WebGPU_API#browser_compatibility
+
+## License
+
+Licensed under GNU Affero General Public License v3.0 (AGPLv3)
+
+Copyright (c) 2025 - present  Romain CLement
