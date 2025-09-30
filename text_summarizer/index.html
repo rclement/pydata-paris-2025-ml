@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>Text Summarizer (Google Gemma 3 270M)</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/water.css@2/out/water.css">
+</head>
+
+<body>
+  <div id="app">
+    <h1>Text Summarizer (Google Gemma 3 270M)</h1>
+
+    <div id="status">Status: Idle</div>
+
+    <button id="loadModelBtn" onclick="loadModel()">Load Model</button>
+
+    <form id="summarizerForm" style="display: none;">
+      <label for="inputText">Text to summarize:</label>
+      <textarea id="inputText" rows="6" cols="80" placeholder="Enter text to be summarized..."></textarea>
+
+      <button type="submit">Summarize</button>
+
+      <label for="outputText">Summary:</label>
+      <textarea id="outputText" rows="4" cols="80" readonly
+        placeholder="Summarized text will appear here..."></textarea>
+    </form>
+  </div>
+
+  <script type="module">
+    let worker = null;
+    let isModelLoaded = false;
+
+    function updateStatus(message) {
+      document.getElementById('status').textContent = `Status: ${message}`;
+    }
+
+    function setUIState(isProcessing) {
+      const inputTextarea = document.getElementById('inputText');
+      const outputTextarea = document.getElementById('outputText');
+      const submitButton = document.querySelector('#summarizerForm button[type="submit"]');
+
+      inputTextarea.disabled = isProcessing;
+      submitButton.disabled = isProcessing;
+      submitButton.textContent = isProcessing ? 'Summarizing...' : 'Summarize';
+
+      if (isProcessing) {
+        outputTextarea.value = '';
+      }
+    }
+
+    // Initialize Web Worker
+    function initWorker() {
+      worker = new Worker('./worker.js', { type: 'module' });
+
+      worker.onmessage = function (e) {
+        const { type, message, text } = e.data;
+
+        switch (type) {
+          case 'status':
+            updateStatus(message);
+            break;
+
+          case 'modelLoaded':
+            isModelLoaded = true;
+            document.getElementById('loadModelBtn').style.display = 'none';
+            document.getElementById('summarizerForm').style.display = 'block';
+            break;
+
+          case 'chunk':
+            // Real-time streaming text display
+            const outputTextarea = document.getElementById('outputText');
+            outputTextarea.value += text;
+            outputTextarea.scrollTop = outputTextarea.scrollHeight;
+            break;
+
+          case 'complete':
+            setUIState(false);
+            break;
+
+          case 'error':
+            updateStatus('Error: ' + message);
+            console.error('Worker error:', message);
+            setUIState(false);
+            document.getElementById('loadModelBtn').disabled = false;
+            break;
+        }
+      };
+
+      worker.onerror = function (error) {
+        updateStatus('Worker error');
+        console.error('Worker error:', error);
+        setUIState(false);
+      };
+    }
+
+    window.loadModel = function () {
+      if (!worker) {
+        initWorker();
+      }
+
+      document.getElementById('loadModelBtn').disabled = true;
+      worker.postMessage({ type: 'loadModel' });
+    };
+
+    window.summarizeText = function (text) {
+      if (!isModelLoaded) {
+        updateStatus('Model not loaded');
+        return;
+      }
+
+      setUIState(true);
+      worker.postMessage({
+        type: 'summarize',
+        data: { text: text }
+      });
+    };
+
+    document.getElementById('summarizerForm').addEventListener('submit', function (e) {
+      e.preventDefault();
+      const inputText = document.getElementById('inputText').value.trim();
+      if (inputText) {
+        summarizeText(inputText);
+      } else {
+        updateStatus('Please enter text to summarize');
+      }
+    });
+  </script>
+</body>
+
+</html>
