@@ -1,0 +1,55 @@
+name: Deployment
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  demo-deployment:
+    name: Demo Deployment
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+
+    steps:
+      - uses: actions/checkout@v5
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+      - name: Build static website
+        run: |
+          mkdir -p dist/housing
+          cp -R housing/index.html dist/housing/
+          cp -R housing/model.onnx dist/housing/
+          mkdir -p dist/text_summarizer
+          cp -R text_summarizer/index.html dist/text_summarizer/
+          cp -R text_summarizer/worker.js dist/text_summarizer/
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+      - name: Generate deployment URL QR codes
+        env:
+          DEPLOYMENT_URL: ${{ steps.deployment.outputs.page_url }}
+        run: |
+          mkdir -p qr/
+          uvx --from 'qrcode[pil]' qr "${DEPLOYMENT_URL}/housing/" > qr/qr_housing.png
+          uvx --from 'qrcode[pil]' qr "${DEPLOYMENT_URL}/text_summarizer/" > qr/qr_text_summarizer.png
+      - name: Upload deployment URL QR code
+        uses: actions/upload-artifact@v4
+        with:
+          name: deployment-url-qr-codes
+          path: qr

@@ -8,17 +8,27 @@ uv sync
 
 ## Housing estimation model
 
+View ONNX model in Netron: https://netron.app/?url=https://github.com/rclement/pydata-paris-2025-ml/raw/refs/heads/main/housing/model.onnx
+
+Play with it locally:
+
 ```bash
 uv run python -m http.server
 # go to: http://localhost:8000/housing/
 ```
 
+Live deployment: https://rclement.github.io/pydata-paris-2025-ml/housing/
+
 ## SLM text summarizer
+
+Play with it locally:
 
 ```bash
 uv run python -m http.server
 # go to: http://localhost:8000/text_summarizer/
 ```
+
+Live deployment: https://rclement.github.io/pydata-paris-2025-ml/text_summarizer/
 
 > [!IMPORTANT]
 > The model should be able to run at descent performance on CPU-only devices
